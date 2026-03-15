@@ -25,7 +25,7 @@ def create_app():
     db.init_app(app)
     bcrypt.init_app(app)
     jwt.init_app(app)
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
     
     with app.app_context():
         import models
