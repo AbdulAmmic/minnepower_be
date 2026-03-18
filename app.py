@@ -32,19 +32,19 @@ def create_app():
         db.create_all()
         
         # Create a default admin if it doesn't exist
-        admin = models.User.query.filter_by(username='admin').first()
+        admin = models.User.query.filter_by(username='admin7878').first()
         if not admin:
-            hashed_pw = bcrypt.generate_password_hash('1-8').decode('utf-8')
+            hashed_pw = bcrypt.generate_password_hash('12345678').decode('utf-8')
             admin = models.User(
-                username='admin',
-                email='admin@admin',
+                username='admin7878',
+                email='admin@minnepower.live',
                 password=hashed_pw,
                 role='admin',
                 btc_balance=0.0,
                 usd_balance=0.0
             )
             db.session.add(admin)
-            print("Created default admin user: admin / 1-8")
+            print("Created default admin user: admin7878 / 12345678")
         
         # Seed default packages
         if not models.Package.query.first():
@@ -70,11 +70,13 @@ def create_app():
     from investments import investments_bp
     from admin import admin_bp
     from notifications_route import notifications_bp
+    from support import support_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(investments_bp, url_prefix='/api/investments')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
+    app.register_blueprint(support_bp, url_prefix='/api/support')
 
     return app
 

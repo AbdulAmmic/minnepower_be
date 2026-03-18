@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 from extensions import db
-from models import User, Investment, Notification, Package, WithdrawRequest, Setting
+from models import User, Investment, Notification, Package, WithdrawRequest, Setting, SupportMessage
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -182,12 +182,13 @@ def confirm_investment(inv_id):
     
     # Update user balance
     user = User.query.get(inv.user_id)
-    user.btc_balance += inv.amount_btc
+    user.usd_balance += inv.amount_usd
+    user.active_investment += inv.amount_usd
     
     # Add notification for the user
     notification = Notification(
         user_id=user.id,
-        message=f"✅ Your investment of {inv.amount_btc} BTC has been confirmed!",
+        message=f"✅ Your investment of ${inv.amount_usd:,.2f} has been confirmed!",
         type='success'
     )
     db.session.add(notification)
@@ -208,10 +209,69 @@ def cancel_investment(inv_id):
     # Add notification for the user
     notification = Notification(
         user_id=inv.user_id,
-        message=f"❌ Your investment request of {inv.amount_btc} BTC was cancelled by admin.",
+        message=f"Your investment request of ${inv.amount_usd:,.2f} was not processed. Please contact support.",
         type='warning'
     )
     db.session.add(notification)
     
     db.session.commit()
     return jsonify({"msg": "Investment cancelled"}), 200
+
+# --- Support Routes ---
+@admin_bp.route('/support/conversations', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_support_conversations():
+    # Get unique users who have support messages
+    user_ids = db.session.query(SupportMessage.user_id).distinct().all()
+    conversations = []
+    for (uid,) in user_ids:
+        user = User.query.get(uid)
+        last_msg = SupportMessage.query.filter_by(user_id=uid).order_by(SupportMessage.created_at.desc()).first()
+        unread_count = SupportMessage.query.filter_by(user_id=uid, sender='user').count()
+        conversations.append({
+            "user_id": uid,
+            "username": user.username,
+            "last_message": last_msg.message if last_msg else "",
+            "last_sender": last_msg.sender if last_msg else "",
+            "last_time": last_msg.created_at.isoformat() if last_msg else "",
+            "unread_count": unread_count
+        })
+    return jsonify(conversations), 200
+
+@admin_bp.route('/support/messages/<int:user_id>', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_user_support_messages(user_id):
+    messages = SupportMessage.query.filter_by(user_id=user_id).order_by(SupportMessage.created_at.asc()).all()
+    return jsonify([{
+        "id": m.id,
+        "message": m.message,
+        "sender": m.sender,
+        "created_at": m.created_at.isoformat()
+    } for m in messages]), 200
+
+@admin_bp.route('/support/reply/<int:user_id>', methods=['POST'])
+@jwt_required()
+@admin_required
+def reply_to_user(user_id):
+    data = request.get_json()
+    message = data.get('message', '').strip()
+    if not message:
+        return jsonify({"msg": "Message cannot be empty"}), 400
+    
+    new_msg = SupportMessage(
+        user_id=user_id,
+        message=message,
+        sender='admin'
+    )
+    db.session.add(new_msg)
+    db.session.commit()
+    
+    return jsonify({
+        "msg": "Reply sent",
+        "id": new_msg.id,
+        "message": new_msg.message,
+        "sender": new_msg.sender,
+        "created_at": new_msg.created_at.isoformat()
+    }), 201

@@ -52,3 +52,12 @@ class Setting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(50), unique=True, nullable=False)
     value = db.Column(db.Text, nullable=False)
+
+class SupportMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    sender = db.Column(db.String(10), nullable=False)  # 'user' or 'admin'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user_rel = db.relationship('User', backref='support_messages')
