@@ -140,17 +140,21 @@ def get_all_users():
 @jwt_required()
 @admin_required
 def update_user_stats(user_id):
-    user = User.query.get_or_404(user_id)
-    data = request.get_json()
-    
-    if 'usd_balance' in data: user.usd_balance = float(data['usd_balance'])
-    if 'total_profit' in data: user.total_profit = float(data['total_profit'])
-    if 'active_investment' in data: user.active_investment = float(data['active_investment'])
-    if 'btc_balance' in data: user.btc_balance = float(data['btc_balance'])
-    if 'wallet_address' in data: user.wallet_address = data['wallet_address']
-    
-    db.session.commit()
-    return jsonify({"msg": "User stats updated successfully"}), 200
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json()
+        
+        if data.get('usd_balance') is not None: user.usd_balance = float(data.get('usd_balance'))
+        if data.get('total_profit') is not None: user.total_profit = float(data.get('total_profit'))
+        if data.get('active_investment') is not None: user.active_investment = float(data.get('active_investment'))
+        if data.get('btc_balance') is not None: user.btc_balance = float(data.get('btc_balance'))
+        if 'wallet_address' in data: user.wallet_address = data['wallet_address']
+        
+        db.session.commit()
+        return jsonify({"msg": "User stats updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Failed to update user: {str(e)}"}), 500
 
 @admin_bp.route('/users/add-investment', methods=['POST'])
 @jwt_required()
