@@ -57,6 +57,20 @@ def create_app():
             db.session.bulk_save_objects(packages)
             print("Seeded default packages")
 
+        # Auto-migrate: Add wallet_address if missing
+        try:
+            from sqlalchemy import text
+            db.session.execute(text("SELECT wallet_address FROM user LIMIT 1"))
+        except Exception:
+            print("wallet_address column missing, attempting to add...")
+            try:
+                db.session.execute(text("ALTER TABLE user ADD COLUMN wallet_address VARCHAR(255)"))
+                db.session.commit()
+                print("Column added successfully via auto-migration.")
+            except Exception as e:
+                db.session.rollback()
+                print(f"Auto-migration failed: {e}")
+
         # Seed default settings
         if not models.Setting.query.filter_by(key='wallet_address').first():
             db.session.add(models.Setting(key='wallet_address', value='Your-BTC-Wallet-Address-Here'))
