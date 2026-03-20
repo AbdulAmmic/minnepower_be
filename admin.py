@@ -118,7 +118,7 @@ def update_settings():
     db.session.commit()
     return jsonify({"msg": "Settings updated"}), 200
 
-# --- User Management Routes ---
+#push go
 @admin_bp.route('/users', methods=['GET'])
 @jwt_required()
 @admin_required

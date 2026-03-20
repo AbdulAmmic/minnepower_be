@@ -38,6 +38,7 @@ def create_app():
             # Use "user" with quotes for Postgres compatibility
             db.session.execute(text('SELECT wallet_address FROM "user" LIMIT 1'))
         except Exception:
+            db.session.rollback() # Rollback aborted transaction before ALTER TABLE
             print("wallet_address column missing, attempting to add...")
             try:
                 db.session.execute(text('ALTER TABLE "user" ADD COLUMN wallet_address VARCHAR(255)'))
