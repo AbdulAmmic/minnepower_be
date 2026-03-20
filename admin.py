@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt
 from extensions import db
 from models import User, Investment, Notification, Package, WithdrawRequest, Setting, SupportMessage
 
-admin_bp = Blueprint('admin', __name__, strict_slashes=False)
+admin_bp = Blueprint('admin', __name__)
 
 # Middleware to check if user is admin
 def admin_required(fn):
