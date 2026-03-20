@@ -11,6 +11,7 @@ class User(db.Model):
     usd_balance = db.Column(db.Float, default=0.0)
     total_profit = db.Column(db.Float, default=0.0)
     active_investment = db.Column(db.Float, default=0.0)
+    wallet_address = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     investments = db.relationship('Investment', backref='user', lazy=True)

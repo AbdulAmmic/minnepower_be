@@ -55,7 +55,8 @@ def login():
                 "btc_balance": user.btc_balance,
                 "usd_balance": user.usd_balance,
                 "total_profit": user.total_profit,
-                "active_investment": user.active_investment
+                "active_investment": user.active_investment,
+                "wallet_address": user.wallet_address
             }
         }), 200
         
@@ -74,5 +75,6 @@ def get_me():
         "btc_balance": user.btc_balance,
         "usd_balance": user.usd_balance,
         "total_profit": user.total_profit,
-        "active_investment": user.active_investment
+        "active_investment": user.active_investment,
+        "wallet_address": user.wallet_address
     }), 200

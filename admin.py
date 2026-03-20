@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt
 from extensions import db
 from models import User, Investment, Notification, Package, WithdrawRequest, Setting, SupportMessage
 
-admin_bp = Blueprint('admin', __name__)
+admin_bp = Blueprint('admin', __name__, strict_slashes=False)
 
 # Middleware to check if user is admin
 def admin_required(fn):
@@ -132,6 +132,7 @@ def get_all_users():
         "usd_balance": u.usd_balance,
         "total_profit": u.total_profit,
         "active_investment": u.active_investment,
+        "wallet_address": u.wallet_address,
         "created_at": u.created_at.isoformat()
     } for u in users]), 200
 
@@ -146,9 +147,45 @@ def update_user_stats(user_id):
     if 'total_profit' in data: user.total_profit = float(data['total_profit'])
     if 'active_investment' in data: user.active_investment = float(data['active_investment'])
     if 'btc_balance' in data: user.btc_balance = float(data['btc_balance'])
+    if 'wallet_address' in data: user.wallet_address = data['wallet_address']
     
     db.session.commit()
     return jsonify({"msg": "User stats updated successfully"}), 200
+
+@admin_bp.route('/users/add-investment', methods=['POST'])
+@jwt_required()
+@admin_required
+def add_investment():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    amount_usd = data.get('amount_usd')
+    
+    if not user_id or not amount_usd:
+        return jsonify({"msg": "Missing user_id or amount_usd"}), 400
+        
+    user = User.query.get_or_404(user_id)
+    
+    new_inv = Investment(
+        user_id=user.id,
+        amount_usd=float(amount_usd),
+        amount_btc=0.0,
+        status='confirmed'
+    )
+    db.session.add(new_inv)
+    
+    # Update user balance
+    user.usd_balance += float(amount_usd)
+    user.active_investment += float(amount_usd)
+    
+    notification = Notification(
+        user_id=user.id,
+        message=f"✅ Admin has manually added an investment of ${float(amount_usd):,.2f} to your account.",
+        type='success'
+    )
+    db.session.add(notification)
+    
+    db.session.commit()
+    return jsonify({"msg": "Investment added successfully", "id": new_inv.id}), 201
 
 # --- Investment Routes (Existing) ---
 @admin_bp.route('/investments/pending', methods=['GET'])
